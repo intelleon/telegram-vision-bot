@@ -1,0 +1,14 @@
+app = "telegram-vision-bot"  # <-- change to something unique
+
+kill_signal = "SIGINT"
+kill_timeout = "5s"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[vm]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+# No [[services]] block: this app doesn't accept HTTP traffic.
