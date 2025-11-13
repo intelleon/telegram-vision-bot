@@ -1,0 +1,10 @@
+# flyctl launch added from .gitignore
+**/cat > .gitignore <<'EOF'
+**/venv
+**/__pycache__
+**/*.pyc
+**/.env
+**/.export*
+**/export.txt
+**/EOF
+fly.toml

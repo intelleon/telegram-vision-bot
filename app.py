@@ -24,6 +24,8 @@ OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 
 import google.generativeai as genai
+import google.api_core.exceptions as gexc
+
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_API_KEY:
@@ -300,6 +302,8 @@ async def analyze_image(image_bytes: bytes, mime_type: str, model: str) -> str:
     )
 
 
+import google.api_core.exceptions as gexc  # at top with other imports
+
 async def analyze_image_gemini(image_bytes: bytes, mime_type: str) -> str:
     try:
         model = genai.GenerativeModel("models/gemini-2.5-flash")
@@ -310,22 +314,35 @@ async def analyze_image_gemini(image_bytes: bytes, mime_type: str) -> str:
         }
 
         prompt = (
-            "Analyze the image exactly like Sherlock Holmes would.\n"
-            "Provide two sections:\n"
-            "1) Observations (bullet points)\n"
-            "2) Deductions (bullet points)\n"
-            f"Limit the entire response to {WORD_LIMIT} words.\n"
-            "Be factual, precise, and avoid hallucinations.\n"
+            "You are a photo forensics expert. Based only on the image and your general world knowledge, "
+            "estimate where and when the photo might have been taken.\n\n"
+            "Return your answer in this structure:\n"
+            "Location guess:\n"
+            "- Primary guess: <city/region, country> (confidence: <low/medium/high>)\n"
+            "- Alternative possibilities (if any): <short list or 'none'>\n\n"
+            "Time guess:\n"
+            "- Approximate year or range (e.g. 'around 2015', 'late 1990s') (confidence: <low/medium/high>)\n\n"
+            "Evidence:\n"
+            "- Bullet points of concrete visual clues (signs, language, architecture, clothing, objects, devices, "
+            "image quality, etc.) that support your guesses.\n\n"
+            "If location or time cannot be inferred, clearly say 'uncertain'. "
+            f"Keep the entire response under {WORD_LIMIT} words."
         )
 
         resp = model.generate_content([prompt, img])
         text = resp.text or ""
         return enforce_word_limit(text)
 
+    except gexc.ResourceExhausted as e:
+        # Quota / rate limit exceeded
+        print("=== Gemini QUOTA ERROR ===")
+        print(e)
+        return "⚠️ Gemini: quota exceeded for now, only ChatGPT’s analysis is shown."
+
     except Exception as e:
         print("=== Gemini ERROR ===")
         print(e)
-        return "⚠️ Gemini analysis failed. (Invalid image or API error.)"
+        return "⚠️ Gemini analysis failed (API error). Only ChatGPT’s analysis is shown."
 
 # =========================
 # Command handlers
@@ -526,9 +543,9 @@ async def handle_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
         gemini_answer = await analyze_image_gemini(image_bytes, mime_type)
 
         reply_text = (
-            "🧠 *ChatGPT (Sherlock Holmes)*:\n"
+            "🧠 *ChatGPT (Sherlock Holmes – what is in the image)*:\n"
             f"{chatgpt_answer}\n\n"
-            "🔮 *Gemini*:\n"
+            "🔮 *Gemini (where/when + evidence)*:\n"
             f"{gemini_answer}"
         )
 

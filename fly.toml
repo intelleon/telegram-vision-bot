@@ -1,14 +1,21 @@
-app = "telegram-vision-bot"  # <-- change to something unique
+# fly.toml app configuration file generated for telegram-vision-bot on 2025-11-12T20:24:49+01:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-kill_signal = "SIGINT"
-kill_timeout = "5s"
+app = 'telegram-vision-bot'
+primary_region = 'cdg'
+kill_signal = 'SIGINT'
+kill_timeout = '5s'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
-[vm]
-  memory = "256mb"
-  cpu_kind = "shared"
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
   cpus = 1
 
-# No [[services]] block: this app doesn't accept HTTP traffic.
+[mounts]
+ source = "bot_data"
+ destination = "/data"
