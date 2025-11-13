@@ -300,7 +300,7 @@ async def analyze_image(image_bytes: bytes, mime_type: str, model: str) -> str:
 
 async def analyze_image_gemini(image_bytes: bytes, mime_type: str) -> str:
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash-latest")
+        model = genai.GenerativeModel("models/gemini-1.5-flash")
 
         img = {
             "mime_type": mime_type,
