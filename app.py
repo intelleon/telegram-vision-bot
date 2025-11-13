@@ -30,6 +30,8 @@ if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
 
+
+
 # Database path (can override with BOT_DB_PATH env if you like)
 DB_PATH = os.getenv("BOT_DB_PATH", "/data/bot.db")
 
@@ -300,7 +302,7 @@ async def analyze_image(image_bytes: bytes, mime_type: str, model: str) -> str:
 
 async def analyze_image_gemini(image_bytes: bytes, mime_type: str) -> str:
     try:
-        model = genai.GenerativeModel("models/gemini-1.5-flash")
+        model = genai.GenerativeModel("models/gemini-2.5-flash")
 
         img = {
             "mime_type": mime_type,
