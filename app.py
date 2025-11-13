@@ -532,44 +532,80 @@ async def handle_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         return
 
-    thinking_msg = await msg.reply_text(
-        "⏳ One moment. I am studying the image with a detective’s eye. "
-        "Clues take but a moment to reveal themselves…"
+    # ── 1) ChatGPT phase ──────────────────────────────────────────────
+    chatgpt_spinner = await msg.reply_text(
+        "⏳ Analyzing the image with ChatGPT (Sherlock Holmes)…"
     )
 
     try:
-
         chatgpt_answer = await analyze_image(image_bytes, mime_type, model)
-        gemini_answer = await analyze_image_gemini(image_bytes, mime_type)
-
-        reply_text = (
-            "🧠 *ChatGPT (Sherlock Holmes – what is in the image)*:\n"
-            f"{chatgpt_answer}\n\n"
-            "🔮 *Gemini (where/when + evidence)*:\n"
-            f"{gemini_answer}"
-        )
-
         save_stat(update, "image_analyzed", model)
     except Exception:
-        print("=== analyze_image ERROR ===")
+        print("=== analyze_image (ChatGPT) ERROR ===")
         traceback.print_exc()
         save_stat(update, "image_error", model)
-        reply_text = (
-            "⚠️ A complication has arisen during analysis. Even the sharpest detective "
-            "encounters the occasional obstacle. Please try resending the image."
+        chatgpt_answer = (
+            "⚠️ A complication has arisen during ChatGPT’s analysis. "
+            "Please try resending the image."
         )
 
-    if not reply_text or not reply_text.strip():
-        reply_text = (
+    if not chatgpt_answer or not chatgpt_answer.strip():
+        chatgpt_answer = (
             "🤔 Curious. I am unable to draw reliable conclusions from this image. "
             "Perhaps a clearer photograph would yield better clues."
         )
 
+    # Show ChatGPT result
     try:
-        await thinking_msg.edit_text(reply_text, parse_mode="Markdown")
+        await chatgpt_spinner.edit_text(
+            "🧠 *ChatGPT (Sherlock Holmes – what is in the image)*:\n"
+            f"{chatgpt_answer}",
+            parse_mode="Markdown",
+        )
     except Exception:
-        await msg.reply_text(reply_text, reply_to_message_id=msg.message_id)
+        await msg.reply_text(
+            "🧠 *ChatGPT (Sherlock Holmes – what is in the image)*:\n"
+            f"{chatgpt_answer}",
+            parse_mode="Markdown",
+            reply_to_message_id=msg.message_id,
+        )
 
+    # ── 2) Gemini phase ───────────────────────────────────────────────
+    # If you want to sometimes skip Gemini to save quota, you could add a random check here.
+
+    gemini_spinner = await msg.reply_text(
+        "🔮 Consulting Gemini about *where and when* this photo might have been taken…"
+    )
+
+    try:
+        gemini_answer = await analyze_image_gemini(image_bytes, mime_type)
+        save_stat(update, "image_analyzed_gemini", model)
+    except Exception:
+        print("=== analyze_image_gemini (Gemini) ERROR ===")
+        traceback.print_exc()
+        save_stat(update, "image_error_gemini", model)
+        gemini_answer = (
+            "⚠️ Gemini analysis failed (API error). Only ChatGPT’s analysis is shown."
+        )
+
+    if not gemini_answer or not gemini_answer.strip():
+        gemini_answer = (
+            "⚠️ Gemini returned no useful information. Only ChatGPT’s analysis is shown."
+        )
+
+    try:
+        await gemini_spinner.edit_text(
+            "🔮 *Gemini (where/when + evidence)*:\n"
+            f"{gemini_answer}",
+            parse_mode="Markdown",
+        )
+    except Exception:
+        await msg.reply_text(
+            "🔮 *Gemini (where/when + evidence)*:\n"
+            f"{gemini_answer}",
+            parse_mode="Markdown",
+            reply_to_message_id=msg.message_id,
+        )
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_user(update)
