@@ -1,2 +1,4 @@
 python-telegram-bot==22.5
 openai>=1.52.0
+google-generativeai
+protobuf==4.25.3   # prevents known gemini/protobuf version conflicts
